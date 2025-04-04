@@ -87,3 +87,23 @@ button:hover {
   overflow-y: auto; /* Add scroll if content overflows */
   max-height: 400px; /* Limit height */
 }
+
+.reminder-group > div {
+  margin-bottom: 5px; /* Thêm khoảng cách giữa checkbox và tùy chọn chi tiết */
+}
+
+#reminderOptions label,
+#reminderOptions input,
+#reminderOptions select {
+  margin-right: 5px; /* Thêm khoảng cách nhỏ giữa các control */
+}
+
+textarea {
+  width: 100%; /* Cho textarea rộng tối đa */
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-family: sans-serif; /* Đảm bảo font giống các input khác */
+  font-size: 1em;
+}

@@ -35,6 +35,15 @@
         </div>
 
         <div class="form-group">
+          <label for="eventDescription">Mô tả sự kiện:</label>
+          <textarea
+            id="eventDescription"
+            rows="4"
+            placeholder="VD: Chuẩn bị đồ cúng, mời mọi người..."
+          ></textarea>
+        </div>
+
+        <div class="form-group">
           <label for="repeatYears">Số năm lặp lại:</label>
           <input
             type="number"
@@ -45,6 +54,33 @@
             required
           />
           <span>(Từ năm hiện tại)</span>
+        </div>
+
+        <div class="form-group reminder-group">
+          <label>Cài đặt nhắc nhở:</label>
+          <div>
+            <input type="checkbox" id="enableReminder" />
+            <label for="enableReminder">Bật nhắc nhở</label>
+          </div>
+          <div
+            id="reminderOptions"
+            style="display: none; margin-top: 10px; padding-left: 20px"
+          >
+            <label for="reminderValue">Nhắc trước:</label>
+            <input
+              type="number"
+              id="reminderValue"
+              value="1"
+              min="1"
+              style="width: 60px"
+            />
+            <select id="reminderUnit">
+              <option value="minutes">phút</option>
+              <option value="hours">giờ</option>
+              <option value="days" selected>ngày</option>
+              <option value="weeks">tuần</option>
+            </select>
+          </div>
         </div>
 
         <div class="button-group">

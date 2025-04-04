@@ -4,6 +4,11 @@ const lunarDayInput = document.getElementById("lunarDay");
 const lunarMonthInput = document.getElementById("lunarMonth");
 const eventTitleInput = document.getElementById("eventTitle");
 const repeatYearsInput = document.getElementById("repeatYears");
+const eventDescriptionInput = document.getElementById("eventDescription"); // Mới
+const enableReminderCheckbox = document.getElementById("enableReminder"); // Mới
+const reminderOptionsDiv = document.getElementById("reminderOptions"); // Mới
+const reminderValueInput = document.getElementById("reminderValue"); // Mới
+const reminderUnitSelect = document.getElementById("reminderUnit"); // Mới
 const previewBtn = document.getElementById("previewBtn");
 const generateBtn = document.getElementById("generateBtn");
 const previewArea = document.getElementById("previewArea");
@@ -13,6 +18,19 @@ function formatDate(year, month, day) {
   const m = String(month).padStart(2, "0");
   const d = String(day).padStart(2, "0");
   return `${y}${m}${d}`;
+}
+
+function escapeICSString(str) {
+  if (!str) return "";
+  return str
+    .replace(/\\/g, "\\\\") // Escape backslash first
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n"); // Escape newlines
+}
+
+function generateUID() {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
 function formatDisplayDate(solarDate) {
@@ -29,7 +47,6 @@ function calculateSolarDates(lunarDay, lunarMonth, startYear, numYears) {
   let currentSolarYear = startYear;
 
   for (let i = 0; i < numYears; i++) {
-    let solarDate = null;
     let attemptYear = currentSolarYear + i;
 
     try {
@@ -99,42 +116,53 @@ function displayPreview(calculatedDates, title) {
   previewArea.textContent = previewText;
 }
 
-function generateICSContent(calculatedDates, title) {
-  if (!calculatedDates || calculatedDates.length === 0) {
-    alert("Không có ngày nào hợp lệ để tạo file ICS.");
-    return null;
-  }
+function generateICSContent(calculatedDates, title, description, reminderSettings) {
+    if (!calculatedDates || calculatedDates.length === 0) {
+        alert("Không có ngày nào hợp lệ để tạo file ICS.");
+        return null;
+    }
 
-  let icsString = `BEGIN:VCALENDAR
+    let icsString = `BEGIN:VCALENDAR
 VERSION:2.0
+PRODID:-//YourAppName//LunarCalendarGenerator//VI
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 `;
 
-  const timestamp = getTimestamp();
+    const timestamp = getTimestamp();
+    const escapedDescription = escapeICSString(description); // Escape mô tả
 
-  calculatedDates.forEach((item) => {
-    const solarDateFormatted = formatDate(
-      item.solar.yy,
-      item.solar.mm,
-      item.solar.dd,
-    );
+    calculatedDates.forEach(item => {
+        const solarDateFormatted = formatDate(item.solar.yy, item.solar.mm, item.solar.dd);
+        const uid = generateUID() + "@yourdomain.com"; // Thêm domain để tăng tính unique
 
-    icsString += `BEGIN:VEVENT
+        icsString += `BEGIN:VEVENT
 UID:${uid}
 DTSTAMP:${timestamp}
 DTSTART;VALUE=DATE:${solarDateFormatted}
-SUMMARY:${title} (${item.lunar.day}/${item.lunar.month} ÂL)
-DESCRIPTION:Sự kiện ${title} vào ngày ${item.lunar.day}/${item.lunar.month} Âm lịch.
+SUMMARY:${escapeICSString(title)} (${item.lunar.day}/${item.lunar.month} ÂL)
+DESCRIPTION:${escapedDescription}
 TRANSP:TRANSPARENT
 SEQUENCE:0
 STATUS:CONFIRMED
-END:VEVENT
 `;
-  });
 
-  icsString += "END:VCALENDAR";
-  return icsString;
+        // Thêm VALARM nếu nhắc nhở được bật
+        if (reminderSettings.enabled && reminderSettings.trigger) {
+            icsString += `BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Reminder
+TRIGGER;VALUE=DURATION:${reminderSettings.trigger}
+END:VALARM
+`;
+        }
+
+        icsString += `END:VEVENT
+`;
+    });
+
+    icsString += 'END:VCALENDAR';
+    return icsString;
 }
 
 function downloadICS(filename, content) {
@@ -149,86 +177,105 @@ function downloadICS(filename, content) {
   document.body.removeChild(link);
 }
 
-previewBtn.addEventListener("click", () => {
-  const lunarDay = parseInt(lunarDayInput.value, 10);
-  const lunarMonth = parseInt(lunarMonthInput.value, 10);
-  const eventTitle = eventTitleInput.value.trim();
-  const repeatYears = parseInt(repeatYearsInput.value, 10);
-  const currentYear = new Date().getFullYear();
-
-  if (
-    !lunarDay ||
-    !lunarMonth ||
-    !eventTitle ||
-    !repeatYears ||
-    lunarDay < 1 ||
-    lunarDay > 30 ||
-    lunarMonth < 1 ||
-    lunarMonth > 12 ||
-    repeatYears < 1
-  ) {
-    alert("Vui lòng nhập đầy đủ và chính xác thông tin!");
-    previewArea.textContent = "Vui lòng nhập đầy đủ và chính xác thông tin.";
-    return;
-  }
-  if (typeof computeDateFromLunarDate !== "function") {
-    alert(
-      "Lỗi: Không tìm thấy hàm computeDateFromLunarDate từ amlich.js. Vui lòng kiểm tra lại.",
-    );
-    previewArea.textContent =
-      "Lỗi: Thiếu thư viện amlich.js hoặc hàm không đúng.";
-    return;
-  }
-
-  const calculatedDates = calculateSolarDates(
-    lunarDay,
-    lunarMonth,
-    currentYear,
-    repeatYears,
-  );
-  displayPreview(calculatedDates, eventTitle);
+enableReminderCheckbox.addEventListener('change', () => {
+    reminderOptionsDiv.style.display = enableReminderCheckbox.checked ? 'block' : 'none';
 });
 
-generateBtn.addEventListener("click", () => {
-  const lunarDay = parseInt(lunarDayInput.value, 10);
-  const lunarMonth = parseInt(lunarMonthInput.value, 10);
-  const eventTitle = eventTitleInput.value.trim();
-  const repeatYears = parseInt(repeatYearsInput.value, 10);
-  const currentYear = new Date().getFullYear();
+// Sự kiện click nút Xem trước (ít thay đổi, chủ yếu lấy thêm giá trị)
+previewBtn.addEventListener('click', () => {
+    const lunarDay = parseInt(lunarDayInput.value, 10);
+    const lunarMonth = parseInt(lunarMonthInput.value, 10);
+    const eventTitle = eventTitleInput.value.trim();
+    // const eventDescription = eventDescriptionInput.value.trim(); // Preview không cần mô tả dài
+    const repeatYears = parseInt(repeatYearsInput.value, 10);
+    const currentYear = new Date().getFullYear();
 
-  if (
-    !lunarDay ||
-    !lunarMonth ||
-    !eventTitle ||
-    !repeatYears ||
-    lunarDay < 1 ||
-    lunarDay > 30 ||
-    lunarMonth < 1 ||
-    lunarMonth > 12 ||
-    repeatYears < 1
-  ) {
-    alert("Vui lòng nhập đầy đủ và chính xác thông tin!");
-    return;
-  }
-  if (typeof computeDateFromLunarDate !== "function") {
-    alert(
-      "Lỗi: Không tìm thấy hàm computeDateFromLunarDate từ amlich.js. Vui lòng kiểm tra lại.",
-    );
-    return;
-  }
+    if (!lunarDay || !lunarMonth || !eventTitle || !repeatYears /* Thêm các kiểm tra khác nếu cần */) {
+        alert('Vui lòng nhập đầy đủ và chính xác thông tin cơ bản!');
+        previewArea.textContent = 'Vui lòng nhập đầy đủ và chính xác thông tin cơ bản.';
+        return;
+    }
+    // Kiểm tra thư viện amlich.js nếu cần
+    // if (typeof computeDateFromLunarDate !== 'function' && typeof convertLunarToSolar !== 'function') { ... }
 
-  const calculatedDates = calculateSolarDates(
-    lunarDay,
-    lunarMonth,
-    currentYear,
-    repeatYears,
-  );
-  const icsContent = generateICSContent(calculatedDates, eventTitle);
+    const calculatedDates = calculateSolarDates(lunarDay, lunarMonth, currentYear, repeatYears);
+    displayPreview(calculatedDates, eventTitle); // Chỉ cần title cho preview
+});
 
-  if (icsContent) {
-    const filename = `lich_am_${lunarDay}_${lunarMonth}_${repeatYears}_nam.ics`;
-    downloadICS(filename, icsContent);
-  }
+// Sự kiện click nút Tạo File ICS (Cập nhật quan trọng)
+generateBtn.addEventListener('click', () => {
+    // Lấy các giá trị cơ bản
+    const lunarDay = parseInt(lunarDayInput.value, 10);
+    const lunarMonth = parseInt(lunarMonthInput.value, 10);
+    const eventTitle = eventTitleInput.value.trim();
+    const repeatYears = parseInt(repeatYearsInput.value, 10);
+    const currentYear = new Date().getFullYear();
+
+    // Lấy giá trị mô tả và nhắc nhở
+    const eventDescription = eventDescriptionInput.value.trim();
+    const reminderEnabled = enableReminderCheckbox.checked;
+    const reminderValue = parseInt(reminderValueInput.value, 10);
+    const reminderUnit = reminderUnitSelect.value;
+
+    // Kiểm tra tính hợp lệ của input
+    if (!lunarDay || !lunarMonth || !eventTitle || !repeatYears /* Thêm các kiểm tra khác */) {
+        alert('Vui lòng nhập đầy đủ và chính xác thông tin cơ bản!');
+        return;
+    }
+    if (reminderEnabled && (!reminderValue || reminderValue < 1)) {
+         alert('Vui lòng nhập giá trị hợp lệ cho thời gian nhắc nhở (lớn hơn 0).');
+         return;
+    }
+    // Kiểm tra thư viện amlich.js nếu cần
+    // if (typeof computeDateFromLunarDate !== 'function' && typeof convertLunarToSolar !== 'function') { ... }
+
+
+    // Tính toán các ngày dương lịch
+    const calculatedDates = calculateSolarDates(lunarDay, lunarMonth, currentYear, repeatYears);
+
+    // Chuẩn bị cài đặt nhắc nhở
+    let reminderSettings = {
+        enabled: reminderEnabled,
+        trigger: null
+    };
+
+    if (reminderEnabled) {
+        let triggerPrefix = '-P'; // Mặc định cho ngày và tuần (Duration)
+        let triggerSuffix = '';
+        switch (reminderUnit) {
+            case 'minutes':
+                triggerPrefix = '-PT'; // Thêm T cho Time
+                triggerSuffix = 'M';
+                break;
+            case 'hours':
+                triggerPrefix = '-PT'; // Thêm T cho Time
+                triggerSuffix = 'H';
+                break;
+            case 'weeks':
+                triggerSuffix = 'W';
+                break;
+            case 'days':
+            default:
+                triggerSuffix = 'D';
+                break;
+        }
+        // Định dạng TRIGGER: ví dụ -P1D (1 ngày trước), -PT15M (15 phút trước), -P2W (2 tuần trước)
+        reminderSettings.trigger = `${triggerPrefix}${reminderValue}${triggerSuffix}`;
+    }
+
+    // Tạo nội dung ICS
+    const icsContent = generateICSContent(calculatedDates, eventTitle, eventDescription, reminderSettings);
+
+    // Tải file
+    if (icsContent) {
+        const filename = `lich_am_${lunarDay}_${lunarMonth}_${repeatYears}_nam.ics`;
+        downloadICS(filename, icsContent);
+    }
+});
+
+// Tùy chọn: Ẩn/hiện phần nhắc nhở khi tải trang lần đầu
+window.addEventListener('load', () => {
+    reminderOptionsDiv.style.display = enableReminderCheckbox.checked ? 'block' : 'none';
 });
 
 window.onload = () => {
