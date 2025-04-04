@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tạo Lịch Âm Lịch ICS</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Tạo Sự Kiện Lịch Âm Lịch Hàng Năm (.ics)</h1>
+
+    <div class="container">
+      <div class="form-section">
+        <h2>Nhập thông tin sự kiện</h2>
+        <div class="form-group">
+          <label for="lunarDay">Ngày Âm Lịch:</label>
+          <input type="number" id="lunarDay" min="1" max="30" required />
+          <span>(1-30)</span>
+        </div>
+
+        <div class="form-group">
+          <label for="lunarMonth">Tháng Âm Lịch:</label>
+          <input type="number" id="lunarMonth" min="1" max="12" required />
+          <span>(1-12)</span>
+        </div>
+
+        <div class="form-group">
+          <label for="eventTitle">Tiêu đề sự kiện:</label>
+          <input
+            type="text"
+            id="eventTitle"
+            placeholder="VD: Giỗ Ông Nội"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="repeatYears">Số năm lặp lại:</label>
+          <input
+            type="number"
+            id="repeatYears"
+            value="5"
+            min="1"
+            max="50"
+            required
+          />
+          <span>(Từ năm hiện tại)</span>
+        </div>
+
+        <div class="button-group">
+          <button id="previewBtn">Xem trước</button>
+          <button id="generateBtn">Tạo File ICS</button>
+        </div>
+      </div>
+
+      <div class="preview-section">
+        <h2>Xem trước danh sách ngày</h2>
+        <pre id="previewArea">Chưa có dữ liệu xem trước...</pre>
+      </div>
+    </div>
+
+    <script src="amlich.js"></script>
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
